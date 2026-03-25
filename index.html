@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>舒尔特方格 · 专注力训练</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, 'Noto Sans', sans-serif;
+            background: #eef2f9;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 页面容器 */
+        .page {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 48px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .page.hide {
+            display: none;
+        }
+
+        /* 选择页样式 */
+        .select-content {
+            padding: 32px 24px 40px;
+            text-align: center;
+        }
+
+        .select-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #1e3c72, #2b4c7c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .select-sub {
+            color: #5f7e9c;
+            margin-bottom: 32px;
+            font-size: 0.9rem;
+        }
+
+        .size-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .size-card {
+            background: #f4f8fe;
+            border-radius: 28px;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c5f8a;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #dce7f2;
+            min-width: 70px;
+        }
+
+        .size-card.active {
+            background: #2c5f8a;
+            color: white;
+            border-color: #2c5f8a;
+            box-shadow: 0 6px 12px rgba(44, 95, 138, 0.2);
+        }
+
+        .btn-start {
+            background: #2c5f8a;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 14px 32px;
+            border-radius: 60px;
+            width: 80%;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .btn-start:active {
+            transform: scale(0.97);
+            background: #1f4a6e;
+        }
+
+        /* 游戏页样式 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px 12px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .back-btn {
+            background: #f0f4fa;
+            border: none;
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            color: #2c5f8a;
+            cursor: pointer;
+        }
+
+        .game-size-badge {
+            font-weight: 600;
+            background: #eef2ff;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #1f4a6e;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: #fafcff;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 10px 16px;
+            flex: 1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid #e9f0f5;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #7b96b5;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            font-feature-settings: 'tnum';
+            line-height: 1.2;
+        }
+
+        .best-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f8a4c;
+        }
+
+        .grid-wrapper {
+            padding: 20px 24px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: #f9fcff;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e2f41;
+            border: 1px solid #e0ecf5;
+            transition: all 0.1s ease;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        /* 柔和高亮样式（长亮） */
+        .cell.highlight {
+            background: #fff3cf;
+            border-color: #f7b32b;
+            color: #b25d00;
+            box-shadow: 0 4px 12px rgba(247, 179, 43, 0.2);
+            transform: scale(0.98);
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 8px 24px 24px;
+        }
+
+        .action-game-btn {
+            background: #f0f4fa;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #2c5f8a;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+
+        .action-game-btn:active {
+            transform: scale(0.97);
+        }
+
+        .completion-banner {
+            margin: 0 24px 16px;
+            background: #dff0e4;
+            border-radius: 60px;
+            padding: 10px;
+            text-align: center;
+            font-weight: 500;
+            color: #2a6b47;
+        }
+
+        @media (max-width: 500px) {
+            .cell {
+                font-size: 1.2rem;
+                border-radius: 14px;
+            }
+            .grid {
+                gap: 8px;
+            }
+            .stat-value {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 选择页面 -->
+<div id="selectPage" class="page">
+    <div class="select-content">
+        <div class="select-title">舒尔特方格</div>
+        <div class="select-sub">选择方格规模 · 开始专注挑战</div>
+        <div class="size-options" id="sizeOptions">
+            <!-- 动态生成3x3 到 9x9 -->
+        </div>
+        <button class="btn-start" id="startGameBtn">▶ 开始训练</button>
+    </div>
+</div>
+
+<!-- 游戏页面 -->
+<div id="gamePage" class="page hide">
+    <div class="game-header">
+        <button class="back-btn" id="backToSelectBtn">← 返回</button>
+        <span class="game-size-badge" id="gameSizeBadge">5x5</span>
+    </div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">本次用时</div>
+            <div class="stat-value" id="currentTimeDisplay">0.00 s</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">历史最佳</div>
+            <div class="stat-value best-value" id="bestRecordDisplay">—</div>
+        </div>
+    </div>
+    <div class="grid-wrapper">
+        <div class="grid" id="gameGrid"></div>
+    </div>
+    <div class="game-actions">
+        <button class="action-game-btn" id="shuffleGameBtn">🔄 洗牌</button>
+    </div>
+    <div id="completionMessage" class="completion-banner" style="display: none;"></div>
+</div>
+
+<script>
+    // ---------- DOM 元素 ----------
+    const selectPage = document.getElementById('selectPage');
+    const gamePage = document.getElementById('gamePage');
+    const sizeOptionsDiv = document.getElementById('sizeOptions');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const backToSelectBtn = document.getElementById('backToSelectBtn');
+    const gameGrid = document.getElementById('gameGrid');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const bestRecordDisplay = document.getElementById('bestRecordDisplay');
+    const shuffleGameBtn = document.getElementById('shuffleGameBtn');
+    const completionMessageDiv = document.getElementById('completionMessage');
+    const gameSizeBadge = document.getElementById('gameSizeBadge');
+
+    // ---------- 游戏核心状态 ----------
+    let currentSize = 5;           // 当前尺寸
+    let gridNumbers = [];           // 一维数字数组
+    let nextNumber = 1;            // 需要点击的下一个数字 (内部逻辑，UI不显示)
+    let maxNumber = 25;
+    let gameStarted = false;        // 计时是否已开始（点击1后启动）
+    let gameCompleted = false;
+    let startTime = 0;
+    let timerInterval = null;
+    let currentCells = [];           // 存储单元格DOM引用（用于高亮操作）
+
+    // 历史最佳存储 key 前缀
+    const BEST_KEY_PREFIX = 'schulte_best_';
+
+    // ---------- 辅助函数 ----------
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    // 开始计时 (点击正确数字1时触发)
+    function startTiming() {
+        if (timerInterval) stopTimer();
+        gameStarted = true;
+        startTime = performance.now();
+        timerInterval = setInterval(() => {
+            if (!gameStarted || gameCompleted) return;
+            const now = performance.now();
+            const elapsed = (now - startTime) / 1000;
+            currentTimeDisplay.innerText = elapsed.toFixed(2) + ' s';
+        }, 40);
+    }
+
+    // 获取当前尺寸的最佳记录（秒数）
+    function getBestTimeForSize(size) {
+        const key = BEST_KEY_PREFIX + size + 'x' + size;
+        const best = localStorage.getItem(key);
+        return best ? parseFloat(best) : null;
+    }
+
+    // 更新游戏页历史最佳显示
+    function updateBestDisplay() {
+        const best = getBestTimeForSize(currentSize);
+        if (best !== null && isFinite(best)) {
+            bestRecordDisplay.innerText = best.toFixed(2) + ' s';
+        } else {
+            bestRecordDisplay.innerText = '——';
+        }
+    }
+
+    // 保存新纪录（如果更优）
+    function trySaveNewRecord(completedTime) {
+        const key = BEST_KEY_PREFIX + currentSize + 'x' + currentSize;
+        const currentBest = getBestTimeForSize(currentSize);
+        if (currentBest === null || completedTime < currentBest) {
+            localStorage.setItem(key, completedTime);
+            updateBestDisplay();
+            return true;
+        }
+        return false;
+    }
+
+    // 完成游戏
+    function completeGame() {
+        if (gameCompleted) return;
+        gameCompleted = true;
+        if (gameStarted) {
+            stopTimer();
+            const finalTime = parseFloat(currentTimeDisplay.innerText.split(' ')[0]);
+            // 保存最佳记录
+            const isNewRecord = trySaveNewRecord(finalTime);
+            // 显示完成消息
+            let msg = `✨ 完成！ ${currentSize}x${currentSize} 用时 ${finalTime.toFixed(2)} 秒 ✨`;
+            if (isNewRecord) msg += ' 🎉 新纪录！';
+            completionMessageDiv.innerText = msg;
+            completionMessageDiv.style.display = 'block';
+            // 3秒后淡隐
+            setTimeout(() => {
+                if (completionMessageDiv) completionMessageDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            // 理论上不会发生，但兜底
+            completionMessageDiv.innerText = `完成！ ${currentSize}x${currentSize}`;
+            completionMessageDiv.style.display = 'block';
+            setTimeout(() => {
+                completionMessageDiv.style.display = 'none';
+            }, 2000);
+        }
+    }
+
+    // 清除所有单元格的高亮类
+    function clearAllHighlights() {
+        document.querySelectorAll('#gameGrid .cell').forEach(cell => {
+            cell.classList.remove('highlight');
+        });
+    }
+
+    // 正确点击处理: 上一个高亮消失，当前格长亮，更新内部状态
+    function handleCorrectClick(cell, clickedNum) {
+        // 如果游戏未开始且点击的是1，启动计时
+        if (!gameStarted && clickedNum === 1) {
+            startTiming();
+        }
+        // 移除所有格子高亮（实现只有一个高亮）
+        clearAllHighlights();
+        // 当前格子添加高亮（柔和长亮）
+        cell.classList.add('highlight');
+        // 更新下一个数字（内部状态，UI不再显示）
+        nextNumber++;
+        // 判断是否完成
+        if (nextNumber > maxNumber) {
+            completeGame();
+        }
+    }
+
+    // 错误点击：无任何反馈（不闪红、无弹窗、无声音）
+    function handleWrongClick() {
+        // 完全不做任何事，符合“无错误提醒”
+        return;
+    }
+
+    // 渲染网格 (根据gridNumbers)
+    function renderGameGrid() {
+        const size = currentSize;
+        gameGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        gameGrid.innerHTML = '';
+        const cells = [];
+        for (let i = 0; i < gridNumbers.length; i++) {
+            const num = gridNumbers[i];
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = num;
+            cell.dataset.value = num;
+            gameGrid.appendChild(cell);
+            cells.push(cell);
+        }
+        currentCells = cells;
+        // 重新绑定事件（使用事件委托）
+        attachGameEvents();
+    }
+
+    // 游戏网格事件委托 (点击处理)
+    let gameGridListener = null;
+    function attachGameEvents() {
+        if (gameGridListener) {
+            gameGrid.removeEventListener('click', gameGridListener);
+        }
+        const clickHandler = (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            if (gameCompleted) return; // 游戏结束不可点击
+            
+            const clickedNum = parseInt(cell.dataset.value, 10);
+            // 正确性校验: 必须等于 nextNumber
+            if (clickedNum === nextNumber) {
+                handleCorrectClick(cell, clickedNum);
+            } else {
+                // 无任何错误提示
+                handleWrongClick();
+            }
+        };
+        gameGrid.addEventListener('click', clickHandler);
+        gameGridListener = clickHandler;
+    }
+
+    // 重置游戏状态（保留当前尺寸，不清除最佳记录）
+    function resetGame(resetNumbers = true) {
+        stopTimer();
+        gameStarted = false;
+        gameCompleted = false;
+        startTime = 0;
+        nextNumber = 1;
+        currentTimeDisplay.innerText = '0.00 s';
+        completionMessageDiv.style.display = 'none';
+        // 清除高亮
+        clearAllHighlights();
+        
+        if (resetNumbers) {
+            // 生成新的随机排列
+            gridNumbers = generateRandomNumbers(currentSize);
+            maxNumber = currentSize * currentSize;
+        }
+        renderGameGrid();
+        // 重新渲染后保证无高亮，且nextNumber=1（内部逻辑正确，UI无数字提示）
+    }
+
+    // 洗牌操作（重置当前游戏并重新随机）
+    function reshuffleGame() {
+        if (gameCompleted) {
+            // 如果已完成，洗牌相当于全新开始
+            resetGame(true);
+        } else {
+            resetGame(true);
+        }
+    }
+
+    // 生成随机排列 (1..N²)
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function generateRandomNumbers(n) {
+        const total = n * n;
+        const arr = Array.from({ length: total }, (_, i) => i + 1);
+        return shuffleArray(arr);
+    }
+
+    // 初始化游戏页（设置尺寸，刷新网格，重置状态，更新UI）
+    function initGamePageWithSize(size) {
+        currentSize = size;
+        maxNumber = size * size;
+        nextNumber = 1;
+        gameStarted = false;
+        gameCompleted = false;
+        startTime = 0;
+        stopTimer();
+        currentTimeDisplay.innerText = '0.00 s';
+        completionMessageDiv.style.display = 'none';
+        // 生成新数字
+        gridNumbers = generateRandomNumbers(size);
+        renderGameGrid();
+        // 更新游戏页尺寸徽章
+        gameSizeBadge.innerText = `${size}x${size}`;
+        // 更新历史最佳显示
+        updateBestDisplay();
+        // 确保高亮清除
+        clearAllHighlights();
+    }
+
+    // 切换到游戏页面
+    function showGamePage() {
+        selectPage.classList.add('hide');
+        gamePage.classList.remove('hide');
+    }
+
+    // 切换到选择页面 (并停止当前游戏计时)
+    function showSelectPage() {
+        // 停止计时，避免后台运行
+        stopTimer();
+        selectPage.classList.remove('hide');
+        gamePage.classList.add('hide');
+    }
+
+    // ---------- 选择页尺寸按钮生成 ----------
+    let selectedSize = 5;  // 默认5x5
+    function buildSizeOptions() {
+        sizeOptionsDiv.innerHTML = '';
+        for (let i = 3; i <= 9; i++) {
+            const btn = document.createElement('div');
+            btn.className = 'size-card';
+            if (i === selectedSize) btn.classList.add('active');
+            btn.textContent = `${i} x ${i}`;
+            btn.dataset.size = i;
+            btn.addEventListener('click', () => {
+                // 更新选中样式
+                document.querySelectorAll('.size-card').forEach(card => card.classList.remove('active'));
+                btn.classList.add('active');
+                selectedSize = i;
+            });
+            sizeOptionsDiv.appendChild(btn);
+        }
+    }
+
+    // 开始游戏：根据选择的尺寸初始化游戏页并跳转
+    function startGame() {
+        initGamePageWithSize(selectedSize);
+        showGamePage();
+    }
+
+    // 返回选择页
+    function backToSelect() {
+        showSelectPage();
+    }
+
+    // ---------- 事件绑定 ----------
+    startGameBtn.addEventListener('click', startGame);
+    backToSelectBtn.addEventListener('click', backToSelect);
+    shuffleGameBtn.addEventListener('click', () => {
+        if (gamePage.classList.contains('hide')) return;
+        reshuffleGame();
+    });
+
+    // 初始化选择页
+    buildSizeOptions();
+    // 预置最佳显示 (游戏页刚开始未加载，但无妨)
+    // 默认选中5x5
+    selectedSize = 5;
+    // 确保选中样式正确 (再执行一次确保)
+    document.querySelectorAll('.size-card').forEach(card => {
+        if (parseInt(card.dataset.size, 10) === 5) card.classList.add('active');
+    });
+
+    // 确保页面初始在选择页，并且游戏页无残留计时
+    showSelectPage();
+    // 预填充游戏页默认5x5数据，但不显示，避免切换时卡顿；由于UI无下一个数字提示，直接预置即可
+    initGamePageWithSize(5);
+</script>
+</body>
+</html>
