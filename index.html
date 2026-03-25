@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>舒尔特方格 · 专注力训练</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 全局禁止滚动，固定 body */
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, 'Noto Sans', sans-serif;
+            background: #eef2f9;
+            margin: 0;
+            padding: 16px;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .page {
+            max-width: 750px;
+            width: 100%;
+            background: white;
+            border-radius: 48px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .page.hide {
+            display: none;
+        }
+
+        /* 选择页样式 */
+        .select-content {
+            padding: 32px 24px 40px;
+            text-align: center;
+        }
+
+        .select-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #1e3c72, #2b4c7c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .select-sub {
+            color: #5f7e9c;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        .size-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .size-card {
+            background: #f4f8fe;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c5f8a;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #dce7f2;
+            min-width: 72px;
+        }
+
+        .size-card.active {
+            background: #2c5f8a;
+            color: white;
+            border-color: #2c5f8a;
+            box-shadow: 0 4px 12px rgba(44, 95, 138, 0.2);
+        }
+
+        .btn-start {
+            background: #2c5f8a;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 14px 32px;
+            border-radius: 60px;
+            width: 70%;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .btn-start:active {
+            transform: scale(0.97);
+            background: #1f4a6e;
+        }
+
+        /* 游戏页紧凑头部 */
+        .game-header-compact {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f8;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .back-btn {
+            background: #f0f4fa;
+            border: none;
+            font-size: 0.95rem;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            color: #2c5f8a;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .stats-inline {
+            display: flex;
+            gap: 16px;
+            background: #f8fafd;
+            border-radius: 36px;
+            padding: 6px 16px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 4px 0;
+        }
+
+        .stat-label-sm {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #7b96b5;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value-sm {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            font-feature-settings: 'tnum';
+            line-height: 1.2;
+        }
+
+        .best-value-sm {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1f8a4c;
+        }
+
+        .game-size-badge {
+            background: #eef2ff;
+            padding: 6px 14px;
+            border-radius: 36px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1f4a6e;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* 网格区域 — 白框 + 整体阴影 */
+        .grid-wrapper {
+            padding: 20px 20px 16px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 8px;               /* 数字方块之间的间隔，更清晰 */
+            justify-content: center;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #1e2f41;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.05s ease;
+            border-radius: 14px;
+            /* 每个方块独立阴影，增强立体感 */
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 高亮效果 */
+        .cell.highlight {
+            background: #ffecb3;
+            color: #b25d00;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            transform: scale(0.98);
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            padding: 12px 20px 28px;
+        }
+
+        .action-game-btn {
+            background: #f0f4fa;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #2c5f8a;
+            cursor: pointer;
+            width: 50%;
+            text-align: center;
+        }
+
+        .action-game-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* 顶部提示 */
+        .top-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2a6b47, #1e8f5a);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-align: center;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(2px);
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            opacity: 0;
+        }
+
+        .top-toast.show {
+            opacity: 1;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 550px) {
+            .page {
+                max-width: 95%;
+            }
+            .grid {
+                gap: 5px;
+                padding: 12px;
+            }
+            .game-header-compact {
+                padding: 10px 12px;
+            }
+            .back-btn {
+                padding: 5px 12px;
+                font-size: 0.85rem;
+            }
+            .game-size-badge {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+            }
+            .stat-value-sm {
+                font-size: 1rem;
+            }
+            .best-value-sm {
+                font-size: 1rem;
+            }
+            .top-toast {
+                top: 12px;
+                white-space: normal;
+                max-width: 85vw;
+                font-size: 0.85rem;
+                padding: 8px 16px;
+            }
+            .cell {
+                border-radius: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="selectPage" class="page">
+    <div class="select-content">
+        <div class="select-title">舒尔特方格</div>
+        <div class="select-sub">选择规模 · 专注挑战</div>
+        <div class="size-options" id="sizeOptions"></div>
+        <button class="btn-start" id="startGameBtn">▶ 开始训练</button>
+    </div>
+</div>
+
+<div id="gamePage" class="page hide">
+    <div class="game-header-compact">
+        <button class="back-btn" id="backToSelectBtn">← 返回</button>
+        <div class="stats-inline">
+            <div class="stat-item">
+                <div class="stat-label-sm">用时</div>
+                <div class="stat-value-sm" id="currentTimeDisplay">0.00 s</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label-sm">最佳</div>
+                <div class="stat-value-sm best-value-sm" id="bestRecordDisplay">—</div>
+            </div>
+        </div>
+        <span class="game-size-badge" id="gameSizeBadge">5x5</span>
+    </div>
+
+    <div class="grid-wrapper">
+        <div class="grid" id="gameGrid"></div>
+    </div>
+    <div class="game-actions">
+        <button class="action-game-btn" id="shuffleGameBtn">🔄 重置</button>
+    </div>
+</div>
+
+<div id="topToast" class="top-toast"></div>
+
+<script>
+    // DOM 元素
+    const selectPage = document.getElementById('selectPage');
+    const gamePage = document.getElementById('gamePage');
+    const sizeOptionsDiv = document.getElementById('sizeOptions');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const backToSelectBtn = document.getElementById('backToSelectBtn');
+    const gameGrid = document.getElementById('gameGrid');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const bestRecordDisplay = document.getElementById('bestRecordDisplay');
+    const shuffleGameBtn = document.getElementById('shuffleGameBtn');
+    const gameSizeBadge = document.getElementById('gameSizeBadge');
+    const topToast = document.getElementById('topToast');
+
+    // 游戏核心状态
+    let currentSize = 5;
+    let gridNumbers = [];
+    let nextNumber = 1;
+    let maxNumber = 25;
+    let gameStarted = false;
+    let gameCompleted = false;
+    let startTime = 0;
+    let timerInterval = null;
+    let lastHighlightedCell = null;
+
+    // 历史最佳存储
+    const BEST_KEY_PREFIX = 'schulte_best_';
+    let completionTimeoutId = null;
+
+    // ---------- 全局禁止滚动 ----------
+    function lockScrollGlobally() {
+        document.body.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+        document.body.addEventListener('wheel', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+    }
+
+    // 动态调整单元格字体大小
+    function adjustFontSize() {
+        const cells = document.querySelectorAll('#gameGrid .cell');
+        if (!cells.length) return;
+        const cellWidth = cells[0].offsetWidth;
+        if (cellWidth === 0) return;
+        
+        let fontSize = Math.min(48, Math.max(14, cellWidth * 0.38));
+        if (currentSize >= 7) fontSize = Math.min(36, fontSize);
+        if (currentSize >= 9) fontSize = Math.min(28, fontSize);
+        
+        cells.forEach(cell => {
+            cell.style.fontSize = fontSize + 'px';
+        });
+    }
+
+    // ---------- 辅助函数 ----------
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function hideTopToast() {
+        if (completionTimeoutId) {
+            clearTimeout(completionTimeoutId);
+            completionTimeoutId = null;
+        }
+        topToast.classList.remove('show');
+    }
+
+    function showTopMessage(message, isNewRecord = false) {
+        if (completionTimeoutId) clearTimeout(completionTimeoutId);
+        let displayMsg = isNewRecord ? message + ' 🎉 新纪录！' : message;
+        topToast.textContent = displayMsg;
+        topToast.classList.add('show');
+        completionTimeoutId = setTimeout(() => {
+            topToast.classList.remove('show');
+            completionTimeoutId = null;
+        }, 2600);
+    }
+
+    function startTiming() {
+        if (timerInterval) stopTimer();
+        gameStarted = true;
+        startTime = performance.now();
+        timerInterval = setInterval(() => {
+            if (!gameStarted || gameCompleted) return;
+            const now = performance.now();
+            const elapsed = (now - startTime) / 1000;
+            currentTimeDisplay.innerText = elapsed.toFixed(2) + ' s';
+        }, 40);
+    }
+
+    function getBestTimeForSize(size) {
+        const key = BEST_KEY_PREFIX + size + 'x' + size;
+        const best = localStorage.getItem(key);
+        return best ? parseFloat(best) : null;
+    }
+
+    function updateBestDisplay() {
+        const best = getBestTimeForSize(currentSize);
+        if (best !== null && isFinite(best)) {
+            bestRecordDisplay.innerText = best.toFixed(2) + ' s';
+        } else {
+            bestRecordDisplay.innerText = '——';
+        }
+    }
+
+    function trySaveNewRecord(completedTime) {
+        const key = BEST_KEY_PREFIX + currentSize + 'x' + currentSize;
+        const currentBest = getBestTimeForSize(currentSize);
+        if (currentBest === null || completedTime < currentBest) {
+            localStorage.setItem(key, completedTime);
+            updateBestDisplay();
+            return true;
+        }
+        return false;
+    }
+
+    function completeGame() {
+        if (gameCompleted) return;
+        gameCompleted = true;
+        if (gameStarted) {
+            stopTimer();
+            const timeText = currentTimeDisplay.innerText;
+            const finalTime = parseFloat(timeText.split(' ')[0]);
+            if (!isNaN(finalTime)) {
+                const isNewRecord = trySaveNewRecord(finalTime);
+                showTopMessage(`✨ 完成！ ${currentSize}x${currentSize} 用时 ${finalTime.toFixed(2)} 秒 ✨`, isNewRecord);
+            } else {
+                showTopMessage(`🎉 挑战成功！ ${currentSize}x${currentSize}`, false);
+            }
+        } else {
+            showTopMessage(`🎉 完成！ ${currentSize}x${currentSize}`, false);
+        }
+    }
+
+    function setHighlight(cell) {
+        if (lastHighlightedCell === cell) return;
+        if (lastHighlightedCell) {
+            lastHighlightedCell.classList.remove('highlight');
+        }
+        cell.classList.add('highlight');
+        lastHighlightedCell = cell;
+    }
+
+    function clearAllHighlights() {
+        if (lastHighlightedCell) {
+            lastHighlightedCell.classList.remove('highlight');
+            lastHighlightedCell = null;
+        }
+    }
+
+    // 极速点击处理
+    function onCellPointerDown(e) {
+        e.preventDefault();
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+        if (gameCompleted) return;
+        
+        const clickedNum = parseInt(cell.dataset.value, 10);
+        if (clickedNum === nextNumber) {
+            setHighlight(cell);
+            nextNumber++;
+            if (nextNumber > maxNumber) {
+                completeGame();
+            }
+        }
+    }
+
+    function renderGameGrid() {
+        const size = currentSize;
+        gameGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        gameGrid.innerHTML = '';
+        for (let i = 0; i < gridNumbers.length; i++) {
+            const num = gridNumbers[i];
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = num;
+            cell.dataset.value = num;
+            gameGrid.appendChild(cell);
+        }
+        clearAllHighlights();
+        setTimeout(adjustFontSize, 10);
+    }
+
+    // 重置游戏（重置数字并立即开始计时）
+    function resetGame(resetNumbers = true) {
+        stopTimer();
+        hideTopToast();
+        
+        gameCompleted = false;
+        nextNumber = 1;
+        currentTimeDisplay.innerText = '0.00 s';
+        clearAllHighlights();
+        
+        if (resetNumbers) {
+            gridNumbers = generateRandomNumbers(currentSize);
+            maxNumber = currentSize * currentSize;
+        }
+        renderGameGrid();
+        
+        // 重置后立即开始计时
+        startTiming();
+    }
+
+    function reshuffleGame() {
+        resetGame(true);
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function generateRandomNumbers(n) {
+        const total = n * n;
+        const arr = Array.from({ length: total }, (_, i) => i + 1);
+        return shuffleArray(arr);
+    }
+
+    function initGamePageWithSize(size, autoStart = false) {
+        hideTopToast();
+        currentSize = size;
+        maxNumber = size * size;
+        nextNumber = 1;
+        gameCompleted = false;
+        stopTimer();
+        currentTimeDisplay.innerText = '0.00 s';
+        gridNumbers = generateRandomNumbers(size);
+        renderGameGrid();
+        gameSizeBadge.innerText = `${size}x${size}`;
+        updateBestDisplay();
+        clearAllHighlights();
+        
+        if (autoStart) {
+            startTiming();
+        } else {
+            gameStarted = false;
+            startTime = 0;
+        }
+    }
+
+    function showGamePage() {
+        hideTopToast();
+        selectPage.classList.add('hide');
+        gamePage.classList.remove('hide');
+        initGamePageWithSize(currentSize, false);
+    }
+
+    function showSelectPage() {
+        stopTimer();
+        hideTopToast();
+        selectPage.classList.remove('hide');
+        gamePage.classList.add('hide');
+    }
+
+    // 选择页尺寸按钮
+    let selectedSize = 5;
+    function buildSizeOptions() {
+        sizeOptionsDiv.innerHTML = '';
+        for (let i = 3; i <= 9; i++) {
+            const btn = document.createElement('div');
+            btn.className = 'size-card';
+            if (i === selectedSize) btn.classList.add('active');
+            btn.textContent = `${i} x ${i}`;
+            btn.dataset.size = i;
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.size-card').forEach(card => card.classList.remove('active'));
+                btn.classList.add('active');
+                selectedSize = i;
+            });
+            sizeOptionsDiv.appendChild(btn);
+        }
+    }
+
+    function startGame() {
+        currentSize = selectedSize;
+        showGamePage();
+    }
+
+    function backToSelect() {
+        showSelectPage();
+    }
+
+    // 事件绑定
+    function bindGlobalEvents() {
+        startGameBtn.addEventListener('click', startGame);
+        backToSelectBtn.addEventListener('click', backToSelect);
+        shuffleGameBtn.addEventListener('click', () => {
+            if (!gamePage.classList.contains('hide')) {
+                reshuffleGame();
+            }
+        });
+        gameGrid.addEventListener('pointerdown', onCellPointerDown);
+        window.addEventListener('resize', () => {
+            if (!gamePage.classList.contains('hide')) {
+                adjustFontSize();
+            }
+        });
+    }
+
+    // 初始化
+    function init() {
+        lockScrollGlobally();
+        buildSizeOptions();
+        bindGlobalEvents();
+        showSelectPage();
+        currentSize = 5;
+        initGamePageWithSize(5, false);
+        document.querySelectorAll('.size-card').forEach(card => {
+            if (parseInt(card.dataset.size, 10) === 5) card.classList.add('active');
+        });
+        selectedSize = 5;
+        hideTopToast();
+    }
+    
+    init();
+</script>
+</body>
+</html>
